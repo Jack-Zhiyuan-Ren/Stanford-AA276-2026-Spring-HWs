@@ -45,16 +45,19 @@ import torch
 
 
 def state_limits():
-        """
-        Return a tuple (upper, lower) describing the state bounds for the system.
+        # """
+        # Return a tuple (upper, lower) describing the state bounds for the system.
         
-        returns:
-            (upper, lower)
-                where upper: torch float32 tensor with shape [13]
-                      lower: torch float32 tensor with shape [13]
-        """
-        # YOUR CODE HERE
-        pass
+        # returns:
+        #     (upper, lower)
+        #         where upper: torch float32 tensor with shape [13]
+        #               lower: torch float32 tensor with shape [13]
+        # """
+    # YOUR CODE HERE
+    upper = torch.tensor([3.0, 3.0, 3.0, 1.0, 1.0, 1.0, 1.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0], dtype=torch.float32)
+    lower = torch.tensor([-3.0, -3.0, -3.0, -1.0, -1.0, -1.0, -1.0, -5.0, -5.0, -5.0, -5.0, -5.0, -5.0], dtype=torch.float32)
+
+    return upper, lower
 
 
 def control_limits():
@@ -66,8 +69,9 @@ def control_limits():
             where upper: torch float32 tensor with shape [4]
                   lower: torch float32 tensor with shape [4]
     """
-    # YOUR CODE HERE
-    pass
+    upper = torch.tensor([20.0, 8.0, 8.0, 4.0], dtype=torch.float32)
+    lower = torch.tensor([-20.0, -8.0, -8.0, -4.0], dtype=torch.float32)
+    return upper, lower
 
 
 """Note: the following functions operate on batched inputs.""" 
@@ -83,9 +87,10 @@ def safe_mask(x):
     returns:
         is_safe: torch bool tensor with shape [batch_size]
     """
-    # YOUR CODE HERE
-    pass
+    px = x[:, 0]
+    py = x[:, 1] 
 
+    return (px**2 + py**2) > 2.8**2
 
 def failure_mask(x):
     """
@@ -97,8 +102,9 @@ def failure_mask(x):
     returns:
         is_failure: torch bool tensor with shape [batch_size]
     """
-    # YOUR CODE HERE
-    pass
+    px = x[:, 0]
+    py = x[:, 1] 
+    return (px**2 + py**2) < 0.5**2
 
 
 def f(x):
@@ -139,5 +145,16 @@ def g(x):
     returns:
         g: torch float32 tensor with shape [batch_size, 13, 4]
     """
-    # YOUR CODE HERE
-    pass
+    PXi, PYi, PZi, QWi, QXi, QYi, QZi, VXi, VYi, VZi, WXi, WYi, WZi = [i for i in range(13)]
+    PX, PY, PZ, QW, QX, QY, QZ, VX, VY, VZ, WX, WY, WZ = [x[:, i] for i in range(13)]
+
+    g = torch.zeros(x.shape[0], 13, 4, dtype=torch.float32)
+    g[:, VXi, 0] = 2.0*(QW*QY + QX*QZ)
+    g[:, VYi, 0] = 2.0*(QY*QZ - QW*QX)
+    g[:, VZi, 0] = 2.0*(0.5 - QX**2 - QY**2)
+    g[:, WXi, 1] = 1.0
+    g[:, WYi, 2] = 1.0
+    g[:, WZi, 3] = 1.0
+    return g
+
+
