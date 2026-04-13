@@ -42,9 +42,13 @@ def euler_step(x, u, dt):
         xn: torch float32 tensor with shape [batch_size, 13]
     """
     # YOUR CODE HERE
-    pass
+    fx = f(x)
+    gx = g(x)
+    gu = torch.bmm(gx, u.unsqueeze(-1)).squeeze(-1)
+    xdot = fx + gu
+    xn = x + xdot * dt
+    return xn
 
-    
 def roll_out(x0, u_fn, nt, dt):
     """
     Return the state trajectories xts obtained by rolling out the system
@@ -65,7 +69,17 @@ def roll_out(x0, u_fn, nt, dt):
         xts: torch float32 tensor with shape [batch_size, nt, 13]
     """
     # YOUR CODE HERE
-    pass
+    x = x0
+    xs = []
+
+    for _ in range(nt):
+        u = u_fn(x)
+        x = euler_step(x, u, dt)
+        xs.append(x)
+    
+    xts = torch.stack(xs, dim=1)
+
+    return xts
 
 
 import cvxpy as cp
@@ -94,5 +108,46 @@ def u_qp(x, h, dhdx, u_ref, gamma, lmbda):
     returns:
         u_qp: torch float32 tensor with shape [batch_size, 4]
     """
-    # YOUR CODE HERE
-    pass
+    umin, umax = control_limits()
+
+    u_min = umin.detach().cpu().numpy().reshape(-1)
+    u_max = umax.detach().cpu().numpy().reshape(-1)
+
+    batch_size = x.shape[0]
+    u_out = []
+
+    for i in range(batch_size):
+        x_i = x[i:i+1]
+        h_i = h[i]
+        dhdx_i = dhdx[i]
+        u_ref_i = u_ref[i].detach().cpu().numpy().reshape(-1)
+
+        f_i = f(x_i).squeeze(0)
+        g_i = g(x_i).squeeze(0)
+
+        a = torch.matmul(dhdx_i, g_i).detach().cpu().numpy().reshape(-1)
+        b = (torch.dot(dhdx_i, f_i) + gamma * h_i).item()
+
+        u_var = cp.Variable(4)
+        delta = cp.Variable(nonneg=True)
+
+        objective = cp.Minimize(cp.sum_squares(u_var - u_ref_i) + lmbda * cp.square(delta))
+
+        # print("u_min shape:", u_min.shape, u_min)
+        # print("u_max shape:", u_max.shape, u_max)
+        # print("a shape:", a.shape, a)
+        # print("u_ref_i shape:", u_ref_i.shape, u_ref_i)
+
+        constraints = [a @ u_var + b + delta >= 0,
+            u_var >= u_min, 
+            u_var <= u_max]
+
+        prob = cp.Problem(objective, constraints)
+        prob.solve()
+        # print(prob.status)
+        # print(u_var.value)
+
+        u_sol = u_var.value
+        u_out.append(torch.tensor(u_sol, dtype=torch.float32))
+
+    return torch.stack(u_out, dim=0)
