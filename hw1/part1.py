@@ -71,7 +71,7 @@ def control_limits():
     """
     upper = torch.tensor([20.0, 8.0, 8.0, 4.0], dtype=torch.float32)
     lower = torch.tensor([-20.0, -8.0, -8.0, -4.0], dtype=torch.float32)
-    return lower, upper
+    return upper, lower
 
 
 """Note: the following functions operate on batched inputs.""" 

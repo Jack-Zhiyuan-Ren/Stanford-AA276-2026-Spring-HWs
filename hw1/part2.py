@@ -108,7 +108,7 @@ def u_qp(x, h, dhdx, u_ref, gamma, lmbda):
     returns:
         u_qp: torch float32 tensor with shape [batch_size, 4]
     """
-    umin, umax = control_limits()
+    umax, umin = control_limits()
 
     u_min = umin.detach().cpu().numpy().reshape(-1)
     u_max = umax.detach().cpu().numpy().reshape(-1)
