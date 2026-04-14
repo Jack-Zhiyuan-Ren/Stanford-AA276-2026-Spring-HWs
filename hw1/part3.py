@@ -59,7 +59,22 @@ def plot_h(fig, ax, px, py, slice, h_fn):
     # you might want to use ax.pcolormesh(.), fig.colorbar(.), and ax.contour(.)
 
     # YOUR CODE HERE
-    pass
+    X_flat = X.reshape(-1, 13)
+
+    H_flat = h_fn(X_flat)
+    H = H_flat.reshape(len(px), len(py))
+
+    PX_np = PX.detach().cpu().numpy()
+    PY_np = PY.detach().cpu().numpy()
+    H_np = H.detach().cpu().numpy()
+
+    pcm = ax.pcolormesh(PX_np, PY_np, H_np, shading='auto')
+    fig.colorbar(pcm, ax=ax)
+    ax.contour(PX_np, PY_np, H_np, levels=[0.0])
+
+
+
+
 
 
 from part1 import safe_mask, failure_mask
@@ -106,5 +121,30 @@ def plot_and_eval_xts(fig, ax, x0, u_ref_fn, h_fn, dhdx_fn, gamma, lmbda, nt, dt
         return u_qp(x, h_fn(x), dhdx_fn(x), u_ref_fn(x), gamma, lmbda)
     # first, you should compute state trajectories xts using roll_out(.)
 
+    with torch.no_grad():
+        xts = roll_out(x0, u_fn, nt, dt)
+    for i in range(x0.shape[0]):
+        ax.plot(
+            xts[i, :, 0].detach().cpu().numpy(),
+            xts[i, :, 1].detach().cpu().numpy(),
+        )
+
+    safe0 = safe_mask(x0)
+
+    xts_flat = xts.reshape(-1, 13)
+    failure_flat = failure_mask(xts_flat)
+    failure = failure_flat.reshape(x0.shape[0], nt)
+    trajectory_failure = failure.any(dim=1)
+
+    num_safe_initial = safe0.sum()
+    if num_safe_initial == 0:
+        return 0.0
+    num_false_safe = (safe0 & trajectory_failure).sum()
+
+    false_safety_rate = num_false_safe.float() / num_safe_initial.float()
+
+    return false_safety_rate.item()
+
+
+
     # YOUR CODE HERE
-    pass
