@@ -9,22 +9,50 @@ Directory layout assumed at runtime (Gradescope standard):
   /autograder/results/      — results.json written here
 """
 
+import importlib.util
 import json
 import os
 import sys
 import pickle
 import traceback
+import types
 
 SOURCE_DIR     = '/autograder/source'
 SUBMISSION_DIR = '/autograder/submission'
 RESULTS_FILE   = '/autograder/results/results.json'
 TESTS_DIR      = os.path.join(SOURCE_DIR, 'tests')
 
-# Submission must be on the path so `import part1` / `import part2` work.
-# Source dir first so autograder utilities take priority over any accidental
-# shadowing in the submission.
 sys.path.insert(0, SUBMISSION_DIR)
 sys.path.insert(0, SOURCE_DIR)
+
+
+def _import_submission_module(module_name):
+    """
+    Import a module from the submission directory, handling both:
+      - absolute imports:  from part1 import f, g   (typical student code)
+      - relative imports:  from .part1 import f, g  (solution package style)
+
+    Works by registering the submission directory as a synthetic 'submission'
+    package so relative imports resolve to the same files as absolute ones.
+    """
+    # Register submission/ as a package once so relative imports work
+    if 'submission' not in sys.modules:
+        pkg = types.ModuleType('submission')
+        pkg.__path__ = [SUBMISSION_DIR]
+        pkg.__package__ = 'submission'
+        sys.modules['submission'] = pkg
+
+    file_path = os.path.join(SUBMISSION_DIR, f'{module_name}.py')
+    spec = importlib.util.spec_from_file_location(
+        f'submission.{module_name}', file_path
+    )
+    mod = importlib.util.module_from_spec(spec)
+    mod.__package__ = 'submission'
+    # Register under both names so both import styles resolve correctly
+    sys.modules[f'submission.{module_name}'] = mod
+    sys.modules[module_name] = mod
+    spec.loader.exec_module(mod)
+    return mod
 
 # ── Scoring Configuration ─────────────────────────────────────────────────────
 PART1_TESTS = [
@@ -135,7 +163,7 @@ def grade_part(module_name, func_specs, part_label):
     results = []
 
     try:
-        mod = __import__(module_name)
+        mod = _import_submission_module(module_name)
     except Exception as e:
         total_max = sum(pts for _, pts in func_specs)
         results.append({

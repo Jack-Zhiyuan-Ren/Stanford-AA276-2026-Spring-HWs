@@ -35,6 +35,8 @@ scenarios = [nominal_params]
 import os
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+_OUTPUTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'outputs')
 USE_SOLUTIONS = False
 if USE_SOLUTIONS:
     from solutions.part1 import state_limits
@@ -113,7 +115,7 @@ cbf_controller = NeuralCBFController(
 
 # Initialize the logger and trainer
 tb_logger = pl_loggers.TensorBoardLogger(
-    'outputs',
+    _OUTPUTS_DIR,
     name='',
 )
 trainer = pl.Trainer.from_argparse_args(

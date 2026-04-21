@@ -1,6 +1,9 @@
 import os
 import sys
 import pickle
+
+_TESTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'autograder', 'tests')
+
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 from utils import run_tests
@@ -24,7 +27,7 @@ print()
 
 
 print('TESTING euler_step...')
-with open('autograder/tests/part2/euler_step_test_cases.pickle', 'rb') as f:
+with open(os.path.join(_TESTS_DIR, 'part2', 'euler_step_test_cases.pickle'), 'rb') as f:
     euler_step_test_cases = pickle.load(f)
 run_tests(euler_step, euler_step_test_cases)
 print()
@@ -41,7 +44,7 @@ def u_fn(x):
 
 
 print('TESTING roll_out...')
-with open('autograder/tests/part2/roll_out_test_cases.pickle', 'rb') as f:
+with open(os.path.join(_TESTS_DIR, 'part2', 'roll_out_test_cases.pickle'), 'rb') as f:
     roll_out_test_cases = pickle.load(f)
     for case in roll_out_test_cases:
         case['args'] = tuple([case['args'][i] if i != 1 else u_fn for i in range(len(case['args']))])
@@ -50,7 +53,7 @@ print()
 
 
 print('TESTING u_qp...')
-with open('autograder/tests/part2/u_qp_test_cases.pickle', 'rb') as f:
+with open(os.path.join(_TESTS_DIR, 'part2', 'u_qp_test_cases.pickle'), 'rb') as f:
     u_qp_test_cases = pickle.load(f)
 run_tests(u_qp, u_qp_test_cases)
 print()

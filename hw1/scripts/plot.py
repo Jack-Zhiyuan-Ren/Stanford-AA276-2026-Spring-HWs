@@ -5,6 +5,9 @@ from neural_clbf.controllers import NeuralCBFController
 import os
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+_OUTPUTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'outputs')
+
 USE_SOLUTIONS = False
 if USE_SOLUTIONS:
     from solutions.part3 import plot_h, plot_and_eval_xts
@@ -14,7 +17,7 @@ else:
     from part1 import state_limits
 state_max, state_min = state_limits()
 
-ckptpath = 'outputs/cbf.ckpt'
+ckptpath = os.path.join(_OUTPUTS_DIR, 'cbf.ckpt')
 neural_controller = NeuralCBFController.load_from_checkpoint(ckptpath)
 
 fig, ax = plt.subplots()
@@ -51,7 +54,8 @@ plot_h(fig, ax, px, py, slice, h_fn)
 print('running plot_and_eval_xts...')
 false_safety_rate = plot_and_eval_xts(fig, ax, x0, u_ref_fn, h_fn, dhdx_fn, gamma, lmbda, nt, dt)
 
-plt.savefig('outputs/plot.png')
+_plot_path = os.path.join(_OUTPUTS_DIR, 'plot.png')
+plt.savefig(_plot_path)
 plt.close()
-print('plot saved to outputs/plot.png')
+print(f'plot saved to {_plot_path}')
 print(f'false safety rate: {false_safety_rate}')
