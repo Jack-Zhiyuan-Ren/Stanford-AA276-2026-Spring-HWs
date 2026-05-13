@@ -176,3 +176,7 @@ cython_debug/
 */wandb/
 */runs/
 */data/
+
+# AA276 TA-only autograders (and their built zips for Gradescope upload)
+hw4/autograder/
+autograder_hw*.zip
