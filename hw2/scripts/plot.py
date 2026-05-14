@@ -98,8 +98,11 @@ ax.contour(px, py, X[..., :2].norm(dim=-1)-0.5, colors='r', levels=[0])
 state_min, state_max = torch.clone(state_slice), torch.clone(state_slice)
 
 # sample car 1 initial positions
-state_min[0], state_min[1] = -5, -1
-state_max[0], state_max[1] = -2, 1
+# state_min[0], state_min[1] = -5, -1
+# state_max[0], state_max[1] = -2, 1
+
+state_min[0], state_min[1] = -5.0, 7.5
+state_max[0], state_max[1] = -2.0, 9.5
 
 x0 = torch.rand(100, 8) * (state_max - state_min) + state_min
 
