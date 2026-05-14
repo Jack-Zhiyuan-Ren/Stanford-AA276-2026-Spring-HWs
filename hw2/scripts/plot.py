@@ -24,11 +24,15 @@ ax.set_xlabel('$p_x$ (m)')
 ax.set_ylabel('$p_y$ (m)')
 px = torch.linspace(-3, 3, 100)
 py = torch.linspace(-3, 3, 100)
-slice = torch.tensor([
-    0., 0., 0.,
-    1., 0., 0., 0.,
-    5., 0., 0.,
-    0., 0., 0.
+# slice = torch.tensor([
+#     0., 0., 0.,
+#     1., 0., 0., 0.,
+#     5., 0., 0.,
+#     0., 0., 0.
+# ])
+state_slice = torch.tensor([
+    0., 0., 0., 8.,   # car 1: px1, py1, psi1, v1
+    0., 0., 0., 8.,   # car 2: px2, py2, psi2, v2
 ])
 
 print('creating plot...')
@@ -67,17 +71,50 @@ fig.colorbar(im)
 ax.contour(px, py, V.T, colors='k', levels=[0])
 ax.contour(px, py, X[..., :2].norm(dim=-1)-0.5, colors='r', levels=[0])
 # trajectories
-state_min, state_max = torch.clone(slice), torch.clone(slice)
+# state_min, state_max = torch.clone(slice), torch.clone(slice)
+# state_min[0], state_min[1] = -5, -1
+# state_max[0], state_max[1] = -2, 1
+# x0 = torch.rand(100, 13)*(state_max-state_min)+state_min
+# is_safe = neuralvf.values(x0) > 0
+# nt = 100
+# dt = 0.01
+# u_fn = lambda x: optimal_control(x, neuralvf.gradients(x).detach())
+# xts = roll_out(x0, u_fn, nt, dt)
+# for i, xt in enumerate(xts):
+#     ax.plot(xt[:, 0], xt[:, 1], color='green' if is_safe[i] else 'orange')
+# safe_line = mlines.Line2D([], [], color='green', label='marked safe')
+# unsafe_line = mlines.Line2D([], [], color='orange', label='marked unsafe')
+# ax.legend(handles=[safe_line, unsafe_line])
+# plt.savefig('outputs/plot.png')
+# plt.close()
+# print('PLOT SAVED TO outputs/plot.png')
+
+# is_fail = torch.any(failure_mask(xts.reshape(-1, 13)).reshape(len(x0), nt), dim=1)
+# false_safety_rate = (torch.sum(is_fail[is_safe])/torch.sum(is_safe)).item()
+# print(f'false safety rate: {false_safety_rate}')
+
+#trajectory for twoCar8D
+# trajectories
+state_min, state_max = torch.clone(state_slice), torch.clone(state_slice)
+
+# sample car 1 initial positions
 state_min[0], state_min[1] = -5, -1
 state_max[0], state_max[1] = -2, 1
-x0 = torch.rand(100, 13)*(state_max-state_min)+state_min
+
+x0 = torch.rand(100, 8) * (state_max - state_min) + state_min
+
 is_safe = neuralvf.values(x0) > 0
+
 nt = 100
 dt = 0.01
+
 u_fn = lambda x: optimal_control(x, neuralvf.gradients(x).detach())
+
 xts = roll_out(x0, u_fn, nt, dt)
+
 for i, xt in enumerate(xts):
     ax.plot(xt[:, 0], xt[:, 1], color='green' if is_safe[i] else 'orange')
+
 safe_line = mlines.Line2D([], [], color='green', label='marked safe')
 unsafe_line = mlines.Line2D([], [], color='orange', label='marked unsafe')
 ax.legend(handles=[safe_line, unsafe_line])
@@ -85,6 +122,6 @@ plt.savefig('outputs/plot.png')
 plt.close()
 print('PLOT SAVED TO outputs/plot.png')
 
-is_fail = torch.any(failure_mask(xts.reshape(-1, 13)).reshape(len(x0), nt), dim=1)
+is_fail = torch.any(failure_mask(xts.reshape(-1, 8)).reshape(len(x0), nt), dim=1)
 false_safety_rate = (torch.sum(is_fail[is_safe])/torch.sum(is_safe)).item()
 print(f'false safety rate: {false_safety_rate}')
