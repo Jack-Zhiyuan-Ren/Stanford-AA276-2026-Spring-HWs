@@ -72,11 +72,11 @@ class NeuralVF:
         sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 
         from libraries.DeepReach_MPC.utils import modules
-        from libraries.DeepReach_MPC.dynamics.dynamics import TwoCars8D
+        from libraries.DeepReach_MPC.dynamics.dynamics import TwoCar8D
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        dynamics = TwoCars8D(
+        dynamics = TwoCar8D(
             collisionR=1,
             set_mode='avoid',
         )
