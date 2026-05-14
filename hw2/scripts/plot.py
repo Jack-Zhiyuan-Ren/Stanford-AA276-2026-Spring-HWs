@@ -108,9 +108,27 @@ is_safe = neuralvf.values(x0) > 0
 nt = 100
 dt = 0.01
 
-u_fn = lambda x: optimal_control(x, neuralvf.gradients(x).detach())
+# u_fn = lambda x: optimal_control(x, neuralvf.gradients(x).detach())
 
-xts = roll_out(x0, u_fn, nt, dt)
+# xts = roll_out(x0, u_fn, nt, dt)
+
+def roll_out_twocar(x0, nt, dt):
+    xts = torch.zeros(x0.shape[0], nt, x0.shape[1])
+    xp = x0.clone()
+
+    for i in range(nt):
+        xts[:, i] = xp
+
+        dvds = neuralvf.gradients(xp).detach()
+        u = neuralvf.dynamics.optimal_control(xp, dvds)
+        d = neuralvf.dynamics.optimal_disturbance(xp, dvds)
+
+        xp = xp + dt * neuralvf.dynamics.dsdt(xp, u, d)
+        xp = neuralvf.dynamics.equivalent_wrapped_state(xp)
+
+    return xts
+
+xts = roll_out_twocar(x0, nt, dt)
 
 for i, xt in enumerate(xts):
     ax.plot(xt[:, 0], xt[:, 1], color='green' if is_safe[i] else 'orange')
