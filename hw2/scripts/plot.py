@@ -18,7 +18,8 @@ from problem4_helper import NeuralVF
 neuralvf = NeuralVF(ckpt_path='outputs/vf.ckpt')
 
 fig, ax = plt.subplots()
-ax.set_title('$V(x)$ for x=(., ., 0, 0, 0, 1, 0, 0, 0, 5, 0, 0, 0, 0, 0)')
+# ax.set_title('$V(x)$ for x=(., ., 0, 0, 0, 1, 0, 0, 0, 5, 0, 0, 0, 0, 0)')
+ax.set_title(r'$V(x)$ for $x=(p_{x1}, p_{y1}, 0, 8, 0, 0, 0, 8)$')
 ax.set_xlabel('$p_x$ (m)')
 ax.set_ylabel('$p_y$ (m)')
 px = torch.linspace(-3, 3, 100)
@@ -32,11 +33,27 @@ slice = torch.tensor([
 
 print('creating plot...')
 # values
+# PX, PY = torch.meshgrid(px, py, indexing='ij')
+# X = torch.zeros((len(px), len(py), 13))
+# X[..., 0] = PX
+# X[..., 1] = PY
+# X[..., 2:] = slice[2:]
+px = torch.linspace(-10, 10, 100)
+py = torch.linspace(-10, 10, 100)
+
 PX, PY = torch.meshgrid(px, py, indexing='ij')
-X = torch.zeros((len(px), len(py), 13))
-X[..., 0] = PX
-X[..., 1] = PY
-X[..., 2:] = slice[2:]
+
+X = torch.zeros(len(px), len(py), 8)
+
+X[..., 0] = PX      # px1
+X[..., 1] = PY      # py1
+X[..., 2] = 0.0     # psi1
+X[..., 3] = 8.0     # v1
+
+X[..., 4] = 0.0     # px2
+X[..., 5] = 0.0     # py2
+X[..., 6] = 0.0     # psi2
+X[..., 7] = 8.0     # v2
 # V = neuralvf.values(X.reshape(-1, 13)).reshape(len(px), len(py))
 #For twoCar8D
 V = neuralvf.values(X.reshape(-1, 8)).reshape(len(px), len(py))
