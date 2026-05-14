@@ -167,4 +167,8 @@ print('PLOT SAVED TO outputs/plot.png')
 
 is_fail = torch.any(failure_mask(xts.reshape(-1, 8)).reshape(len(x0), nt), dim=1)
 false_safety_rate = (torch.sum(is_fail[is_safe])/torch.sum(is_safe)).item()
+print("num marked safe:", torch.sum(is_safe).item())
+print("num marked unsafe:", torch.sum(~is_safe).item())
+print("num failed among safe:", torch.sum(is_fail[is_safe]).item())
+print("num failed among unsafe:", torch.sum(is_fail[~is_safe]).item())
 print(f'false safety rate: {false_safety_rate}')
