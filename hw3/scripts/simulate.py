@@ -76,7 +76,9 @@ ax.set_ylabel('$p_y$ (m)')
 # plot the obstacles
 pxs = torch.linspace(-1.0, 10.0, 101)
 pys = torch.linspace(-5.0, 5.0, 101)
-Ps = torch.stack(torch.meshgrid(pxs, pys, indexing='ij'), dim=2)
+# Ps = torch.stack(torch.meshgrid(pxs, pys, indexing='ij'), dim=2)
+Px, Py = torch.meshgrid(pxs, pys)
+Ps = torch.stack((Px, Py), dim=2)
 failure_values = failure_function(Ps.reshape(-1, 2), obstacles)[1].reshape(len(pxs), len(pys))
 ax.contour(pxs, pys, failure_values.T, levels=[0], colors='r')
 # plot the goal

@@ -16,6 +16,54 @@ neuralvf = NeuralVF()
 values = neuralvf.values(x)
 gradients = neuralvf.gradients(x)
 """
+# class NeuralVF:
+#     def __init__(self, ckpt_path='outputs/vf.ckpt'):
+#         import os
+#         import sys
+#         sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+#         sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
+
+#         from libraries.DeepReach_MPC.utils import modules
+#         from libraries.DeepReach_MPC.dynamics.dynamics import Quadrotor
+
+#         dynamics = Quadrotor(collisionR=0.5, collective_thrust_max=20, set_mode='avoid')
+#         model = modules.SingleBVPNet(in_features=dynamics.input_dim, out_features=1, type='sine', mode='mlp',
+#                                     final_layer_factor=1., hidden_features=512, num_hidden_layers=3, 
+#                                     periodic_transform_fn=dynamics.periodic_transform_fn)
+#         model.cuda()
+#         model.load_state_dict(torch.load(ckpt_path)['model'])
+
+#         self.dynamics = dynamics
+#         self.model = model
+
+#     def values(self, x):
+#         """
+#         args:
+#             x: torch tensor with shape      [batch_size, 13]
+#         returns:
+#             values: torch tensor with shape [batch_size]
+#         """
+#         coords = torch.concatenate((torch.ones((len(x), 1)), x), dim=1)
+#         model_input = self.dynamics.coord_to_input(coords)
+#         with torch.no_grad():
+#             model_results = self.model({'coords': model_input.cuda()})
+#         values = self.dynamics.io_to_value(model_results['model_in'].detach(), model_results['model_out'].detach().squeeze(dim=-1))
+#         return values.cpu()
+    
+#     def gradients(self, x):
+#         """
+#         args:
+#             x: torch tensor with shape         [batch_size, 13]
+#         returns:
+#             gradients: torch tensor with shape [batch_size, 13]
+#         """
+#         coords = torch.concatenate((torch.ones((len(x), 1)), x), dim=1)
+#         model_input = self.dynamics.coord_to_input(coords)
+#         model_results = self.model({'coords': model_input.cuda()})
+#         gradients = self.dynamics.io_to_dv(model_results['model_in'], model_results['model_out'].squeeze(dim=-1))[:, 1:]
+#         return gradients.cpu()
+
+### For the twoCars8D system
 class NeuralVF:
     def __init__(self, ckpt_path='outputs/vf.ckpt'):
         import os
@@ -24,14 +72,38 @@ class NeuralVF:
         sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 
         from libraries.DeepReach_MPC.utils import modules
-        from libraries.DeepReach_MPC.dynamics.dynamics import Quadrotor
+        from libraries.DeepReach_MPC.dynamics.dynamics import TwoCars8D
 
-        dynamics = Quadrotor(collisionR=0.5, collective_thrust_max=20, set_mode='avoid')
-        model = modules.SingleBVPNet(in_features=dynamics.input_dim, out_features=1, type='sine', mode='mlp',
-                                    final_layer_factor=1., hidden_features=512, num_hidden_layers=3, 
-                                    periodic_transform_fn=dynamics.periodic_transform_fn)
-        model.cuda()
-        model.load_state_dict(torch.load(ckpt_path)['model'])
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        dynamics = TwoCars8D(
+            collisionR=1,
+            set_mode='avoid',
+        )
+
+        model = modules.SingleBVPNet(
+            in_features=dynamics.input_dim,
+            out_features=1,
+            type='sine',
+            mode='mlp',
+            final_layer_factor=1.,
+            hidden_features=512,
+            num_hidden_layers=3,
+            periodic_transform_fn=dynamics.periodic_transform_fn,
+        )
+
+        ckpt = torch.load(ckpt_path, map_location=self.device)
+
+        ckpt_input_dim = ckpt["model"]["net.net.0.0.weight"].shape[1]
+        if ckpt_input_dim != dynamics.input_dim:
+            raise ValueError(
+                f"Checkpoint input_dim={ckpt_input_dim}, but dynamics.input_dim={dynamics.input_dim}. "
+                "This means the checkpoint and dynamics class do not match."
+            )
+
+        model.to(self.device)
+        model.load_state_dict(ckpt["model"])
+        model.eval()
 
         self.dynamics = dynamics
         self.model = model
@@ -39,29 +111,53 @@ class NeuralVF:
     def values(self, x):
         """
         args:
-            x: torch tensor with shape      [batch_size, 13]
+            x: torch tensor with shape      [batch_size, 8]
         returns:
             values: torch tensor with shape [batch_size]
         """
-        coords = torch.concatenate((torch.ones((len(x), 1)), x), dim=1)
+        x = x.to(self.device)
+
+        coords = torch.concatenate(
+            (torch.ones((len(x), 1), device=self.device), x),
+            dim=1,
+        )
+
         model_input = self.dynamics.coord_to_input(coords)
+
         with torch.no_grad():
-            model_results = self.model({'coords': model_input.cuda()})
-        values = self.dynamics.io_to_value(model_results['model_in'].detach(), model_results['model_out'].detach().squeeze(dim=-1))
+            model_results = self.model({'coords': model_input})
+
+        values = self.dynamics.io_to_value(
+            model_results['model_in'].detach(),
+            model_results['model_out'].detach().squeeze(dim=-1),
+        )
+
         return values.cpu()
-    
+
     def gradients(self, x):
         """
         args:
-            x: torch tensor with shape         [batch_size, 13]
+            x: torch tensor with shape         [batch_size, 8]
         returns:
-            gradients: torch tensor with shape [batch_size, 13]
+            gradients: torch tensor with shape [batch_size, 8]
         """
-        coords = torch.concatenate((torch.ones((len(x), 1)), x), dim=1)
+        x = x.to(self.device)
+
+        coords = torch.concatenate(
+            (torch.ones((len(x), 1), device=self.device), x),
+            dim=1,
+        )
+
         model_input = self.dynamics.coord_to_input(coords)
-        model_results = self.model({'coords': model_input.cuda()})
-        gradients = self.dynamics.io_to_dv(model_results['model_in'], model_results['model_out'].squeeze(dim=-1))[:, 1:]
+        model_results = self.model({'coords': model_input})
+
+        gradients = self.dynamics.io_to_dv(
+            model_results['model_in'],
+            model_results['model_out'].squeeze(dim=-1),
+        )[:, 1:]
+
         return gradients.cpu()
+
     
 """
 Helper class for querying cbf.ckpt.
