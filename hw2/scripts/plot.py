@@ -101,12 +101,34 @@ state_min, state_max = torch.clone(state_slice), torch.clone(state_slice)
 # state_min[0], state_min[1] = -5, -1
 # state_max[0], state_max[1] = -2, 1
 
-state_min[0], state_min[1] = -5.0, 7.5
-state_max[0], state_max[1] = -2.0, 9.5
+# state_min[0], state_min[1] = -5.0, 7.5
+# state_max[0], state_max[1] = -2.0, 9.5
+
+
+# x0 = torch.rand(100, 8) * (state_max - state_min) + state_min
+# is_safe = neuralvf.values(x0) > 0
+
+############ Randomized initial positions for both cars
+state_min, state_max = torch.clone(state_slice), torch.clone(state_slice)
+
+# car 1 starts outside BRT
+state_min[0], state_max[0] = -5.0, -2.0      # px1
+state_min[1], state_max[1] = 7.5, 9.5        # py1
+
+# randomize heading and speed of car 1
+state_min[2], state_max[2] = -0.8, 0.8       # psi1
+state_min[3], state_max[3] = 4.0, 12.0       # v1
+
+# optionally randomize car 2 too
+state_min[4], state_max[4] = -1.0, 1.0       # px2
+state_min[5], state_max[5] = -1.0, 1.0       # py2
+state_min[6], state_max[6] = -0.5, 0.5       # psi2
+state_min[7], state_max[7] = 4.0, 12.0       # v2
 
 x0 = torch.rand(100, 8) * (state_max - state_min) + state_min
-
 is_safe = neuralvf.values(x0) > 0
+
+
 
 nt = 100
 dt = 0.01
