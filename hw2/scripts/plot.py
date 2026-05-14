@@ -37,7 +37,10 @@ X = torch.zeros((len(px), len(py), 13))
 X[..., 0] = PX
 X[..., 1] = PY
 X[..., 2:] = slice[2:]
-V = neuralvf.values(X.reshape(-1, 13)).reshape(len(px), len(py))
+# V = neuralvf.values(X.reshape(-1, 13)).reshape(len(px), len(py))
+#For twoCar8D
+V = neuralvf.values(X.reshape(-1, 8)).reshape(len(px), len(py))
+
 px = px.detach().cpu().numpy()
 py = py.detach().cpu().numpy()
 V = V.detach().cpu().numpy()
