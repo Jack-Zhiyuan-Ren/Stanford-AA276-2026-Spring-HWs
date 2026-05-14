@@ -77,7 +77,8 @@ class NeuralVF:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         dynamics = TwoCar8D(
-            collisionR=1,
+            collisionR=0.5,
+            wheelbase=5.0,
             set_mode='avoid',
         )
 
